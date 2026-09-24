@@ -1,6 +1,6 @@
 # MyLudo-Stats
 
-Statistiques de jeux de société via MyLudo, avec n8n.
+Statistiques de jeux de société avec n8n pour le site **[MyLudo](https://www.myludo.fr/)** : collection, liste de souhaits et fiches de jeux de votre profil MyLudo.
 
 ## Workflow
 
