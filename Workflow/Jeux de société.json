@@ -1,0 +1,1007 @@
+{
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "active": false,
+  "pinData": {},
+  "tags": [],
+  "name": "MyLudo - Jeux de société",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "https://YOUR_N8N_HOST.example.invalid/",
+        "options": {
+          "allowUnauthorizedCerts": true,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -5328,
+        2112
+      ],
+      "id": "ccc65d81-d8b2-56ef-8d15-8f704f358683",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "4a1cf3d8-1821-5694-aec3-54e02e71b37f",
+              "name": "jour_de_la_semaine",
+              "value": "={{ $json.jour_de_la_semaine }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -5776,
+        2192
+      ],
+      "id": "b63e83af-ce65-55de-89d8-20d3511648cb",
+      "name": "Configuration Globale"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "dfe26474-e182-5972-9207-d7a85fa59c45",
+              "leftValue": "={{ $json.statusCode }}",
+              "rightValue": 200,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -5104,
+        2112
+      ],
+      "id": "11414c52-4fbd-51ef-b1a2-ffc97f32a7bb",
+      "name": "If5"
+    },
+    {
+      "parameters": {
+        "command": "=pkill ngrok; sleep 2; nohup ngrok http 5678 > /dev/null 2>&1 &"
+      },
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        -4880,
+        2224
+      ],
+      "id": "3aaf07f6-8721-5f42-b68b-d0447cf717d8",
+      "name": "Restauration Tunnel1"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -4688,
+        2368
+      ],
+      "id": "2ff47a75-e58c-5a63-9ed4-035415f2d264",
+      "name": "Wait1",
+      "webhookId": "6fcb2207-ad6e-535f-80f8-f22736087c43"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -5552,
+        2192
+      ],
+      "id": "9cf716a8-65c9-5a0c-adac-d1de82a38918",
+      "name": "Loop Over Items4"
+    },
+    {
+      "parameters": {
+        "operation": "formatDate",
+        "date": "={{ $now }}",
+        "format": "custom",
+        "customFormat": "E",
+        "outputFieldName": "jour_de_la_semaine",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dateTime",
+      "typeVersion": 2,
+      "position": [
+        -6000,
+        2192
+      ],
+      "id": "af38f99a-5a72-5561-af8d-b27cad9ef768",
+      "name": "Date & Time"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                5
+              ],
+              "triggerAtHour": 17
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -6224,
+        2192
+      ],
+      "id": "72d12e9b-b1a2-56cc-bc27-48c79f818bf4",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: {\n  profile: \"YOUR_MYLUDO_PROFILE_ID\",\n  browserless_url: \"http://browserless:3000/function?timeout=120000\",\n  batch_size: 3,\n  cookies: []\n} }];"
+      },
+      "id": "010e575a-f101-5c2d-9316-b30b9e8e67e1",
+      "name": "Paramètres MyLudo",
+      "notesInFlow": true,
+      "position": [
+        -2896,
+        1392
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "notes": "Profil public : aucun cookie nécessaire. Adresse Browserless reprise du workflow fourni. Trois fiches maximum par requête."
+    },
+    {
+      "parameters": {
+        "jsCode": "function unwrapResponse(value) {\n  let current = value;\n  for (let i = 0; i < 4; i++) {\n    if (typeof current === \"string\") {\n      try { current = JSON.parse(current); } catch { throw new Error(\"Réponse Browserless non JSON\"); }\n    } else if (current && typeof current === \"object\" && \"data\" in current && !(\"ok\" in current)) {\n      current = current.data;\n    } else break;\n  }\n  if (!current || typeof current !== \"object\" || Array.isArray(current)) throw new Error(\"Réponse Browserless vide ou invalide\");\n  if (current.error || current.erreur || current.ok === false) throw new Error(String(current.error?.message || current.error || current.erreur || \"Échec MyLudo\"));\n  return current;\n}\ntry {\n  const result = unwrapResponse($input.first().json);\n  if (result.statut_session !== 'valide' || !Array.isArray(result.sections) || result.sections.length !== 2 || result.sections.some(s => !s.accessible)) throw new Error('Accès aux deux listes non confirmé');\n  return [{ json: result }];\n} catch (error) {\n  return [{ json: { ok: false, statut_session: 'inaccessible', erreur: error.message } }];\n}"
+      },
+      "id": "bad0a14d-4ff6-5d1c-bcdd-4f69ec740315",
+      "name": "Contrôler l’accès",
+      "position": [
+        -2448,
+        1392
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "jsCode": "function unwrapResponse(value) {\n  let current = value;\n  for (let i = 0; i < 4; i++) {\n    if (typeof current === \"string\") {\n      try { current = JSON.parse(current); } catch { throw new Error(\"Réponse Browserless non JSON\"); }\n    } else if (current && typeof current === \"object\" && \"data\" in current && !(\"ok\" in current)) {\n      current = current.data;\n    } else break;\n  }\n  if (!current || typeof current !== \"object\" || Array.isArray(current)) throw new Error(\"Réponse Browserless vide ou invalide\");\n  if (current.error || current.erreur || current.ok === false) throw new Error(String(current.error?.message || current.error || current.erreur || \"Échec MyLudo\"));\n  return current;\n}\nconst manifest = unwrapResponse($input.first().json);\nif (manifest.profile !== $('Paramètres MyLudo').first().json.profile) throw new Error('Mauvais profil extrait');\nif (!Array.isArray(manifest.sections) || manifest.sections.length !== 2 || !Array.isArray(manifest.rows)) throw new Error('Listes MyLudo manquantes');\nfor (const name of ['collection', 'wishlist']) {\n  const section = manifest.sections.find(s => s.section === name);\n  const rows = manifest.rows.filter(r => r.statuts === name);\n  if (!section || !section.complete || !Number.isInteger(section.total) || section.total < 0 || rows.length !== section.total || section.count !== section.total) throw new Error('Liste incomplète : ' + name);\n}\nif (manifest.rows.length !== manifest.sections.reduce((sum,s) => sum+s.total, 0)) throw new Error('Comptage global incohérent');\nconst keys = new Set();\nconst uniqueGames = new Map();\nfor (const row of manifest.rows) {\n  const key = row.statuts + ':' + row.id;\n  if (!row.Nom || !row.id || keys.has(key)) throw new Error('Jeu manquant ou répété : ' + key);\n  keys.add(key);\n  uniqueGames.set(row.id, { id: row.id, url: row.url });\n}\nconst games = [...uniqueGames.values()];\nconst size = Math.max(1, Math.min(3, Number($('Paramètres MyLudo').first().json.batch_size) || 3));\nconst batches = [];\nfor (let i=0; i<games.length; i+=size) batches.push({ json: { batch: batches.length, games: games.slice(i,i+size) } });\n// Keep one empty batch so an explicitly empty profile can still be validated.\nreturn batches.length ? batches : [{ json: { batch: 0, games: [] } }];"
+      },
+      "id": "02995f4d-e760-597a-96d7-0d89f181d5dd",
+      "name": "Préparer les lots",
+      "notesInFlow": true,
+      "position": [
+        -1776,
+        1248
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "notes": "Une fiche par identifiant MyLudo ; un jeu présent dans les deux listes conserve deux lignes avec des statuts différents."
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": false
+        }
+      },
+      "id": "dcf81f1b-027c-5629-80d9-8152af540573",
+      "name": "Boucle des fiches",
+      "position": [
+        -1552,
+        1248
+      ],
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Paramètres MyLudo').first().json.browserless_url }}",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "code",
+              "value": "function readGameDetails(expectedId) {\n  const clean = value => String(value ?? \"\").replace(/\\s+/g, \" \").trim();\n  const text = el => {\n    if (!el) return \"\";\n    const copy = el.cloneNode(true);\n    copy.querySelectorAll(\"i\").forEach(n => n.remove());\n    return clean(copy.textContent);\n  };\n  const title = document.querySelector(\"main .cover-title\");\n  const identity = document.querySelector('main .open-breakdown[data-context=\"game\"][data-id]');\n  const detail = document.querySelector(\"main #info .card-content.details\");\n  const infoHref = document.querySelector('main .tabs a[data-target=\"info\"][href]')?.getAttribute(\"href\") ?? \"\";\n  const actualId = infoHref.match(/-(\\d+)\\/info(?:$|[?#])/)?.[1] ?? identity?.getAttribute(\"data-id\");\n  if (!title || actualId !== String(expectedId) || !detail) {\n    return { ready: false, id: actualId ?? null };\n  }\n  const editionLabel = text(title.querySelector(\".edition\"));\n  const priceElement = detail.querySelector('p.price[title=\"Prix indicatif\"]') || detail.querySelector(\"p.price\");\n  const genre = [...new Set([...document.querySelectorAll('main #info .themes a[title=\"Catégorie\"]')].map(text).filter(Boolean))];\n  const releaseLine = [...detail.querySelectorAll(\"p\")].map(text).find(t => /^Sortie le\\b/i.test(t)) ?? \"\";\n  return {\n    ready: true, id: actualId, genre, edition_label: editionLabel,\n    price_label: priceElement ? text(priceElement) : null,\n    release_label: releaseLine\n  };\n}\n\nasync function prepareBrowser(page, rawContext) {\n  const context = typeof rawContext === \"string\" ? JSON.parse(rawContext) : (rawContext ?? {});\n  const profile = context.profile ?? \"ludomaster-139495\";\n  const profileId = profile.match(/-(\\d+)$/)?.[1];\n  if (!profileId || !/^[a-z0-9-]+$/i.test(profile)) throw new Error(\"Profil MyLudo invalide\");\n  page.setDefaultNavigationTimeout(20000);\n  page.setDefaultTimeout(18000);\n  await page.setViewport({ width: 1365, height: 1000 });\n  await page.setRequestInterception(true);\n  page.on(\"request\", request => {\n    const action = [\"image\", \"font\", \"media\"].includes(request.resourceType()) ? request.abort() : request.continue();\n    action.catch(() => {});\n  });\n  if (Array.isArray(context.cookies) && context.cookies.length) {\n    const cookies = context.cookies.map(cookie => {\n      const domain = String(cookie.domain ?? \"www.myludo.fr\").replace(/^\\./, \"\");\n      if (domain !== \"myludo.fr\" && !domain.endsWith(\".myludo.fr\")) throw new Error(\"Cookie hors du domaine MyLudo\");\n      return { ...cookie, domain: cookie.domain ?? \".myludo.fr\", path: cookie.path ?? \"/\" };\n    });\n    await page.setCookie(...cookies);\n  }\n  return { ...context, profile, profileId };\n}\n\nexport default async function scrapeDetails({ page, context = {} }) {\n  const config = await prepareBrowser(page, context);\n  if (!Array.isArray(config.games) || config.games.length > 3) throw new Error(\"Lot de fiches invalide (3 maximum)\");\n  const details = [];\n  for (const game of config.games) {\n    if (!/^\\d+$/.test(String(game.id)) || !new RegExp(\"^https://www\\\\.myludo\\\\.fr/#!/game/[^/?#]+-\" + game.id + \"$\", \"i\").test(game.url)) {\n      throw new Error(\"Lien de fiche invalide pour \" + game.id);\n    }\n    await page.goto(\"about:blank\");\n    const response = await page.goto(game.url, { waitUntil: \"domcontentloaded\" });\n    if (response && response.status() >= 400) throw new Error(game.id + \" : HTTP \" + response.status());\n    await page.waitForFunction(id => {\n      const infoHref = document.querySelector('main .tabs a[data-target=\"info\"][href]')?.getAttribute(\"href\") ?? \"\";\n      const actual = infoHref.match(/-(\\d+)\\/info(?:$|[?#])/)?.[1] ?? document.querySelector('main .open-breakdown[data-context=\"game\"][data-id]')?.getAttribute(\"data-id\");\n      return actual === String(id) && !!document.querySelector(\"main .cover-title\") && !!document.querySelector(\"main #info .card-content.details\");\n    }, { timeout: 18000 }, game.id);\n    const detail = await page.evaluate(readGameDetails, game.id);\n    if (!detail.ready) throw new Error(\"Fiche incomplète ou mauvaise édition : \" + game.id);\n    details.push(detail);\n    await new Promise(resolve => setTimeout(resolve, 350));\n  }\n  return { data: { ok: true, batch: config.batch, details }, type: \"application/json\" };\n}"
+            },
+            {
+              "name": "context",
+              "value": "={{ { ...$('Paramètres MyLudo').first().json, batch: $json.batch, games: $json.games } }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 130000
+        }
+      },
+      "id": "83839a31-bbc2-58ca-b58f-a939e4571e31",
+      "maxTries": 2,
+      "name": "Fiches des jeux",
+      "notesInFlow": true,
+      "position": [
+        -1328,
+        1344
+      ],
+      "retryOnFail": true,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "waitBetweenTries": 3000,
+      "notes": "Lit les genres et l’année de l’édition pour tous les jeux. Le prix collection vient uniquement de Détails / Prix indicatif."
+    },
+    {
+      "parameters": {
+        "jsCode": "const result = $('Stat4').first().json;\nif (!result.complete || !Array.isArray(result.rows)) throw new Error('Extraction non validée');\nreturn result.rows.map(row => ({ json: row }));"
+      },
+      "id": "3cb743ba-0fd5-51d8-8058-cec5080efd3f",
+      "name": "Lignes validées",
+      "position": [
+        -880,
+        1152
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "YOUR_JEUX_DE_SOCI_T__TABLE_ID",
+          "mode": "id"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Nom": "={{ $json.Nom }}",
+            "annee_sortie": "={{ $json.annee_sortie }}",
+            "categorie": "={{ $json.categorie }}",
+            "genre": "={{ $json.genre }}",
+            "prix": "={{ $json.prix }}",
+            "statuts": "={{ $json.statuts }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Nom",
+              "displayName": "Nom",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "statuts",
+              "displayName": "statuts",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "genre",
+              "displayName": "genre",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "categorie",
+              "displayName": "categorie",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "prix",
+              "displayName": "prix",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "annee_sortie",
+              "displayName": "annee_sortie",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": true,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "da53b508-ee7e-5986-884a-5e5847088516",
+      "name": "Enregistrer les jeux",
+      "notesInFlow": true,
+      "position": [
+        -656,
+        1152
+      ],
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "notes": "Colonnes exactes : Nom, statuts, genre, categorie, prix, annee_sortie. Vérifier les types de la table avant le premier lancement : quatre textes et deux nombres."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Paramètres MyLudo').first().json.browserless_url }}",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "code",
+              "value": "function readProfileSection(section) {\n  const clean = value => String(value ?? \"\").replace(/\\s+/g, \" \").trim();\n  const text = el => {\n    if (!el) return \"\";\n    const copy = el.cloneNode(true);\n    copy.querySelectorAll(\"i\").forEach(n => n.remove());\n    return clean(copy.textContent);\n  };\n  const root = document.querySelector(\"main #\" + section);\n  const profile = document.querySelector(\"main .profil-header .btn-share[data-url]\");\n  const profileUrl = profile?.getAttribute(\"data-url\") ?? \"\";\n  if (!root) return { section, profileUrl, ready: false, rows: [], displayed: null, total: null };\n  const visible = root.getClientRects().length > 0 && getComputedStyle(root).display !== \"none\";\n  const counterText = text(root.querySelector(\".filters > .chip\"));\n  const counter = counterText.replace(/\\s/g, \"\").match(/^(\\d+)(?:\\/(\\d+))?$/);\n  const displayed = counter ? Number(counter[1]) : null;\n  const total = counter ? Number(counter[2] ?? counter[1]) : null;\n  const rows = [...root.querySelectorAll(\".game\")].map(card => {\n    const link = card.querySelector('.title a[href*=\"#!/game/\"]') || card.querySelector('.picture a[href*=\"#!/game/\"]');\n    if (!link) throw new Error(\"Carte sans lien MyLudo dans \" + section);\n    const href = link.getAttribute(\"href\");\n    const id = href.match(/-(\\d+)(?:\\/|$)/)?.[1];\n    if (!id) throw new Error(\"Identifiant de jeu introuvable : \" + href);\n    const title = text(link) || clean(link.getAttribute(\"title\"));\n    const subtitle = text(card.querySelector(\".subtitle\"));\n    const label = text(card.querySelector(\".status\"));\n    if (!title) throw new Error(\"Nom de jeu manquant : \" + id);\n    return {\n      id,\n      url: \"https://www.myludo.fr/\" + href,\n      Nom: subtitle && !title.toLowerCase().includes(subtitle.toLowerCase()) ? title + \" - \" + subtitle : title,\n      statuts: section,\n      edition_label: label,\n      price_label: section === \"wishlist\" ? text(card.querySelector(\"p.context\")) : null\n    };\n  });\n  const filters = root.querySelector(\"#filter-panel\");\n  const words = filters?.querySelector('input[name=\"words\"]')?.value ?? \"\";\n  const groups = filters ? [...filters.querySelectorAll(\".btn-group[data-name]\")].map(g => ({\n    name: g.getAttribute(\"data-name\"), value: g.getAttribute(\"data-value\") ?? \"\"\n  })) : [];\n  return {\n    section, profileUrl, ready: visible && counter !== null, displayed, total, counterText,\n    rows, hasFull: !!root.querySelector(\"a.full\"), hasMore: !!root.querySelector(\"a.more\"),\n    words, filterGroups: groups\n  };\n}\n\nasync function prepareBrowser(page, rawContext) {\n  const context = typeof rawContext === \"string\" ? JSON.parse(rawContext) : (rawContext ?? {});\n  const profile = context.profile ?? \"ludomaster-139495\";\n  const profileId = profile.match(/-(\\d+)$/)?.[1];\n  if (!profileId || !/^[a-z0-9-]+$/i.test(profile)) throw new Error(\"Profil MyLudo invalide\");\n  page.setDefaultNavigationTimeout(20000);\n  page.setDefaultTimeout(18000);\n  await page.setViewport({ width: 1365, height: 1000 });\n  await page.setRequestInterception(true);\n  page.on(\"request\", request => {\n    const action = [\"image\", \"font\", \"media\"].includes(request.resourceType()) ? request.abort() : request.continue();\n    action.catch(() => {});\n  });\n  if (Array.isArray(context.cookies) && context.cookies.length) {\n    const cookies = context.cookies.map(cookie => {\n      const domain = String(cookie.domain ?? \"www.myludo.fr\").replace(/^\\./, \"\");\n      if (domain !== \"myludo.fr\" && !domain.endsWith(\".myludo.fr\")) throw new Error(\"Cookie hors du domaine MyLudo\");\n      return { ...cookie, domain: cookie.domain ?? \".myludo.fr\", path: cookie.path ?? \"/\" };\n    });\n    await page.setCookie(...cookies);\n  }\n  return { ...context, profile, profileId };\n}\n\nasync function openProfileSection(page, config, section, resetFilters) {\n  // A fresh document avoids hash-route reuse and stale hidden tabs.\n  await page.goto(\"about:blank\");\n  const response = await page.goto(\"https://www.myludo.fr/#!/profil/\" + config.profile + \"/\" + section, { waitUntil: \"domcontentloaded\" });\n  if (response && response.status() >= 400) throw new Error(section + \" : HTTP \" + response.status());\n  await page.waitForFunction(({ section, profileId }) => {\n    const share = document.querySelector(\"main .profil-header .btn-share[data-url]\");\n    return share?.getAttribute(\"data-url\")?.endsWith(\"-\" + profileId)\n      && !!document.querySelector('main .tabs a[href=\"#' + section + '\"]');\n  }, { timeout: 18000 }, { section, profileId: config.profileId });\n  await page.evaluate(section => {\n    const tab = document.querySelector('main .tabs a[href=\"#' + section + '\"]');\n    const root = document.querySelector(\"main #\" + section);\n    if (tab && (!root || !root.getClientRects().length || getComputedStyle(root).display === \"none\" || !tab.classList.contains(\"active\"))) tab.click();\n  }, section);\n  const waitReady = async () => {\n    await page.waitForFunction(section => {\n      const root = document.querySelector(\"main #\" + section);\n      const chip = root?.querySelector(\".filters > .chip\")?.cloneNode(true);\n      if (!root || !chip || !root.getClientRects().length || getComputedStyle(root).display === \"none\") return false;\n      chip.querySelectorAll(\"i\").forEach(el => el.remove());\n      return /^\\d+(?:\\/\\d+)?$/.test(chip.textContent.replace(/\\s/g, \"\"));\n    }, { timeout: 18000 }, section);\n  };\n  await waitReady();\n  if (resetFilters) {\n    await page.evaluate(section => document.querySelector(\"main #\" + section + \" .btn-clear-filters\")?.click(), section);\n    // MyLudo refreshes this tab asynchronously after clearing its filters.\n    await new Promise(resolve => setTimeout(resolve, 700));\n    await waitReady();\n  }\n  const state = await page.evaluate(readProfileSection, section);\n  if (!state.ready || !state.profileUrl.endsWith(\"-\" + config.profileId)) throw new Error(section + \" : accès au profil non confirmé\");\n  return state;\n}\n\nexport default async function checkAccess({ page, context = {} }) {\n  try {\n    const config = await prepareBrowser(page, context);\n    const sections = [];\n    for (const section of [\"collection\", \"wishlist\"]) {\n      const state = await openProfileSection(page, config, section, false);\n      sections.push({ section, accessible: true, total: state.total });\n    }\n    return { data: { ok: true, statut_session: \"valide\", mode_acces: config.cookies?.length ? \"avec_cookies\" : \"public\", sections }, type: \"application/json\" };\n  } catch (error) {\n    return { data: { ok: false, statut_session: \"inaccessible\", erreur: \"MyLudo : \" + error.message + \". Vérifier la visibilité du profil, la connexion éventuelle et la disponibilité du site.\" }, type: \"application/json\" };\n  }\n}"
+            },
+            {
+              "name": "context",
+              "value": "={{ $('Paramètres MyLudo').first().json }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 130000
+        }
+      },
+      "id": "3517fcfc-a80a-5a4a-ba28-d33b532bdd35",
+      "name": "Vérification cookie1",
+      "notesInFlow": true,
+      "position": [
+        -2672,
+        1392
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "onError": "continueRegularOutput",
+      "notes": "Valide l’accès réel à la collection ET à la wishlist. Une page publique sans connexion est valide."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "05f61261-04be-511c-bbae-d4a098a4ed82",
+              "leftValue": "={{ $json.statut_session }}",
+              "operator": {
+                "name": "filter.operator.equals",
+                "operation": "equals",
+                "type": "string"
+              },
+              "rightValue": "valide"
+            },
+            {
+              "id": "97ad9805-5308-5b21-a7f7-f50f16584b44",
+              "leftValue": "={{ $json.ok === true }}",
+              "operator": {
+                "operation": "true",
+                "singleValue": true,
+                "type": "boolean"
+              },
+              "rightValue": ""
+            }
+          ],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          }
+        },
+        "options": {}
+      },
+      "id": "cb94f4ba-112f-5b5c-9f48-066783d62e58",
+      "name": "If10",
+      "position": [
+        -2224,
+        1392
+      ],
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3
+    },
+    {
+      "parameters": {
+        "authentication": "webhook",
+        "content": "={{ '❌ MyLudo : collection/wishlist inaccessibles. ' + ($json.erreur || 'Vérifier la visibilité du profil ou la disponibilité du site.') + ' La table n’a pas été modifiée.' }}",
+        "options": {}
+      },
+      "id": "1626b94b-2168-52a3-8498-c4812801fb28",
+      "name": "Discord2",
+      "position": [
+        -2000,
+        1440
+      ],
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "webhookId": "adecfe1f-b5b2-59f1-b56a-cfd1f623d1a4"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Paramètres MyLudo').first().json.browserless_url }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  code: `\nfunction readProfileSection(section) {\n  const clean = value => String(value ?? \"\").replace(/\\\\s+/g, \" \").trim();\n\n  const text = el => {\n    if (!el) return \"\";\n\n    const copy = el.cloneNode(true);\n    copy.querySelectorAll(\"i\").forEach(n => n.remove());\n\n    return clean(copy.textContent);\n  };\n\n  const root = document.querySelector(\"main #\" + section);\n\n  const profile = document.querySelector(\n    \"main .profil-header .btn-share[data-url]\"\n  );\n\n  const profileUrl =\n    profile?.getAttribute(\"data-url\") ?? \"\";\n\n  if (!root) {\n    return {\n      section,\n      profileUrl,\n      ready: false,\n      rows: [],\n      displayed: null,\n      total: null\n    };\n  }\n\n  const visible =\n    root.getClientRects().length > 0 &&\n    getComputedStyle(root).display !== \"none\";\n\n  const counterText =\n    text(\n      root.querySelector(\n        \".filters > .chip\"\n      )\n    );\n\n  const counter =\n    counterText\n      .replace(/\\\\s/g, \"\")\n      .match(/^(\\\\d+)(?:\\\\/(\\\\d+))?$/);\n\n  const displayed =\n    counter\n      ? Number(counter[1])\n      : null;\n\n  const total =\n    counter\n      ? Number(\n          counter[2] ??\n          counter[1]\n        )\n      : null;\n\n  const rows = [\n    ...root.querySelectorAll(\n      \".game\"\n    )\n  ].map(card => {\n    const link =\n      card.querySelector(\n        '.title a[href*=\"#!/game/\"]'\n      ) ||\n      card.querySelector(\n        '.picture a[href*=\"#!/game/\"]'\n      );\n\n    if (!link) {\n      throw new Error(\n        \"Carte sans lien MyLudo dans \" +\n        section\n      );\n    }\n\n    const href =\n      link.getAttribute(\n        \"href\"\n      );\n\n    const id =\n      href.match(\n        /-(\\\\d+)(?:\\\\/|$)/\n      )?.[1];\n\n    if (!id) {\n      throw new Error(\n        \"Identifiant de jeu introuvable : \" +\n        href\n      );\n    }\n\n    const title =\n      text(link) ||\n      clean(\n        link.getAttribute(\n          \"title\"\n        )\n      );\n\n    const subtitle =\n      text(\n        card.querySelector(\n          \".subtitle\"\n        )\n      );\n\n    const label =\n      text(\n        card.querySelector(\n          \".status\"\n        )\n      );\n\n    if (!title) {\n      throw new Error(\n        \"Nom de jeu manquant : \" +\n        id\n      );\n    }\n\n    return {\n      id,\n\n      url:\n        \"https://www.myludo.fr/\" +\n        href,\n\n      Nom:\n        subtitle &&\n        !title\n          .toLowerCase()\n          .includes(\n            subtitle.toLowerCase()\n          )\n          ? title +\n            \" - \" +\n            subtitle\n          : title,\n\n      statuts:\n        section,\n\n      edition_label:\n        label,\n\n      price_label:\n        section ===\n          \"wishlist\"\n          ? text(\n              card.querySelector(\n                \"p.context\"\n              )\n            )\n          : null\n    };\n  });\n\n  const filters =\n    root.querySelector(\n      \"#filter-panel\"\n    );\n\n  const words =\n    filters\n      ?.querySelector(\n        'input[name=\"words\"]'\n      )\n      ?.value ?? \"\";\n\n  const groups =\n    filters\n      ? [\n          ...filters.querySelectorAll(\n            \".btn-group[data-name]\"\n          )\n        ].map(g => ({\n          name:\n            g.getAttribute(\n              \"data-name\"\n            ),\n\n          value:\n            g.getAttribute(\n              \"data-value\"\n            ) ?? \"\"\n        }))\n      : [];\n\n  return {\n    section,\n    profileUrl,\n\n    ready:\n      visible &&\n      counter !== null,\n\n    displayed,\n    total,\n    counterText,\n    rows,\n\n    hasFull:\n      !!root.querySelector(\n        \"a.full\"\n      ),\n\n    hasMore:\n      !!root.querySelector(\n        \"a.more\"\n      ),\n\n    words,\n\n    filterGroups:\n      groups\n  };\n}\n\n\n// ============================================================\n// BROWSER\n// ============================================================\n\nasync function prepareBrowser(\n  page,\n  rawContext\n) {\n  const context =\n    typeof rawContext ===\n    \"string\"\n      ? JSON.parse(\n          rawContext\n        )\n      : (\n          rawContext ??\n          {}\n        );\n\n  const profile =\n    context.profile ??\n    \"ludomaster-139495\";\n\n  const profileId =\n    profile.match(\n      /-(\\\\d+)$/\n    )?.[1];\n\n  if (\n    !profileId ||\n    !/^[a-z0-9-]+$/i.test(\n      profile\n    )\n  ) {\n    throw new Error(\n      \"Profil MyLudo invalide\"\n    );\n  }\n\n  page.setDefaultNavigationTimeout(\n    20000\n  );\n\n  page.setDefaultTimeout(\n    18000\n  );\n\n  await page.setViewport({\n    width: 1365,\n    height: 1000\n  });\n\n  await page.setRequestInterception(\n    true\n  );\n\n  page.on(\n    \"request\",\n    request => {\n      const action =\n        [\n          \"image\",\n          \"font\",\n          \"media\"\n        ].includes(\n          request.resourceType()\n        )\n          ? request.abort()\n          : request.continue();\n\n      action.catch(\n        () => {}\n      );\n    }\n  );\n\n  if (\n    Array.isArray(\n      context.cookies\n    ) &&\n    context.cookies.length\n  ) {\n    const cookies =\n      context.cookies.map(\n        cookie => {\n          const domain =\n            String(\n              cookie.domain ??\n              \"www.myludo.fr\"\n            ).replace(\n              /^\\\\./,\n              \"\"\n            );\n\n          if (\n            domain !==\n              \"myludo.fr\" &&\n            !domain.endsWith(\n              \".myludo.fr\"\n            )\n          ) {\n            throw new Error(\n              \"Cookie hors du domaine MyLudo\"\n            );\n          }\n\n          return {\n            ...cookie,\n\n            domain:\n              cookie.domain ??\n              \".myludo.fr\",\n\n            path:\n              cookie.path ??\n              \"/\"\n          };\n        }\n      );\n\n    await page.setCookie(\n      ...cookies\n    );\n  }\n\n  return {\n    ...context,\n    profile,\n    profileId\n  };\n}\n\n\n// ============================================================\n// OPEN SECTION\n// ============================================================\n\nasync function openProfileSection(\n  page,\n  config,\n  section,\n  resetFilters\n) {\n  await page.goto(\n    \"about:blank\"\n  );\n\n  const response =\n    await page.goto(\n      \"https://www.myludo.fr/#!/profil/\" +\n        config.profile +\n        \"/\" +\n        section,\n\n      {\n        waitUntil:\n          \"domcontentloaded\"\n      }\n    );\n\n  if (\n    response &&\n    response.status() >=\n      400\n  ) {\n    throw new Error(\n      section +\n      \" : HTTP \" +\n      response.status()\n    );\n  }\n\n  try {\n    await page.waitForFunction(\n      ({\n        section,\n        profileId\n      }) => {\n        const share =\n          document.querySelector(\n            \"main .profil-header .btn-share[data-url]\"\n          );\n\n        return (\n          share\n            ?.getAttribute(\n              \"data-url\"\n            )\n            ?.endsWith(\n              \"-\" +\n              profileId\n            ) &&\n          !!document.querySelector(\n            'main .tabs a[href=\"#' +\n              section +\n              '\"]'\n          )\n        );\n      },\n\n      {\n        timeout: 18000\n      },\n\n      {\n        section,\n        profileId:\n          config.profileId\n      }\n    );\n  } catch {\n    throw new Error(\n      section +\n      \" : profil/onglet non chargé\"\n    );\n  }\n\n  await page.evaluate(\n    section => {\n      const tab =\n        document.querySelector(\n          'main .tabs a[href=\"#' +\n            section +\n            '\"]'\n        );\n\n      const root =\n        document.querySelector(\n          \"main #\" +\n          section\n        );\n\n      if (\n        tab &&\n        (\n          !root ||\n          !root\n            .getClientRects()\n            .length ||\n          getComputedStyle(\n            root\n          ).display ===\n            \"none\" ||\n          !tab.classList.contains(\n            \"active\"\n          )\n        )\n      ) {\n        tab.click();\n      }\n    },\n\n    section\n  );\n\n  const waitReady =\n    async label => {\n      try {\n        await page.waitForFunction(\n          section => {\n            const root =\n              document.querySelector(\n                \"main #\" +\n                section\n              );\n\n            const chip =\n              root\n                ?.querySelector(\n                  \".filters > .chip\"\n                )\n                ?.cloneNode(\n                  true\n                );\n\n            if (\n              !root ||\n              !chip ||\n              !root\n                .getClientRects()\n                .length ||\n              getComputedStyle(\n                root\n              ).display ===\n                \"none\"\n            ) {\n              return false;\n            }\n\n            chip\n              .querySelectorAll(\n                \"i\"\n              )\n              .forEach(\n                el =>\n                  el.remove()\n              );\n\n            return /^\\\\d+(?:\\\\/\\\\d+)?$/.test(\n              chip.textContent.replace(\n                /\\\\s/g,\n                \"\"\n              )\n            );\n          },\n\n          {\n            timeout: 18000\n          },\n\n          section\n        );\n      } catch {\n        throw new Error(\n          section +\n          \" : compteur non prêt (\" +\n          label +\n          \")\"\n        );\n      }\n    };\n\n  await waitReady(\n    \"ouverture\"\n  );\n\n  if (resetFilters) {\n    await page.evaluate(\n      section =>\n        document\n          .querySelector(\n            \"main #\" +\n            section +\n            \" .btn-clear-filters\"\n          )\n          ?.click(),\n\n      section\n    );\n\n    await new Promise(\n      resolve =>\n        setTimeout(\n          resolve,\n          700\n        )\n    );\n\n    await waitReady(\n      \"après suppression des filtres\"\n    );\n  }\n\n  const state =\n    await page.evaluate(\n      readProfileSection,\n      section\n    );\n\n  if (\n    !state.ready ||\n    !state.profileUrl.endsWith(\n      \"-\" +\n      config.profileId\n    )\n  ) {\n    throw new Error(\n      section +\n      \" : accès au profil non confirmé\"\n    );\n  }\n\n  return state;\n}\n\n\n// ============================================================\n// LOAD ENTIRE SECTION\n// ============================================================\n\nasync function loadEntireSection(\n  page,\n  config,\n  section\n) {\n  let state =\n    await openProfileSection(\n      page,\n      config,\n      section,\n      true\n    );\n\n  if (\n    state.words ||\n    state.filterGroups.some(\n      g =>\n        g.name ===\n          \"filter\" &&\n        g.value\n    )\n  ) {\n    throw new Error(\n      section +\n      \" : filtre encore actif\"\n    );\n  }\n\n  let clicks = 0;\n\n  while (\n    state.rows.length !==\n    state.total\n  ) {\n    if (\n      state.rows.length >\n        state.total ||\n      clicks >= 20\n    ) {\n      throw new Error(\n        section +\n        \" : compteur incohérent ou pagination incomplète\"\n      );\n    }\n\n    const previousCount =\n      state.rows.length;\n\n    const clicked =\n      await page.evaluate(\n        section => {\n          const root =\n            document.querySelector(\n              \"main #\" +\n              section\n            );\n\n          const button =\n            root\n              ?.querySelector(\n                \"a.full\"\n              ) ||\n            root\n              ?.querySelector(\n                \"a.more\"\n              );\n\n          if (!button) {\n            return false;\n          }\n\n          button.click();\n\n          return true;\n        },\n\n        section\n      );\n\n    if (!clicked) {\n      throw new Error(\n        section +\n        \" : bouton Tout/Plus absent, \" +\n        previousCount +\n        \"/\" +\n        state.total\n      );\n    }\n\n    try {\n      await page.waitForFunction(\n        ({\n          section,\n          previousCount\n        }) => {\n          const root =\n            document.querySelector(\n              \"main #\" +\n              section\n            );\n\n          return (\n            root &&\n            root.querySelectorAll(\n              \".game\"\n            ).length >\n              previousCount\n          );\n        },\n\n        {\n          timeout: 20000\n        },\n\n        {\n          section,\n          previousCount\n        }\n      );\n    } catch {\n      throw new Error(\n        section +\n        \" : aucun nouveau jeu après clic Tout/Plus (\" +\n        previousCount +\n        \"/\" +\n        state.total +\n        \")\"\n      );\n    }\n\n    state =\n      await page.evaluate(\n        readProfileSection,\n        section\n      );\n\n    if (!state.ready) {\n      throw new Error(\n        section +\n        \" : liste disparue pendant le chargement\"\n      );\n    }\n\n    clicks++;\n  }\n\n  await new Promise(\n    resolve =>\n      setTimeout(\n        resolve,\n        500\n      )\n  );\n\n  state =\n    await page.evaluate(\n      readProfileSection,\n      section\n    );\n\n  if (\n    !state.ready ||\n    state.rows.length !==\n      state.total ||\n    state.displayed !==\n      state.total\n  ) {\n    throw new Error(\n      section +\n      \" : extraction partielle (\" +\n      state.rows.length +\n      \"/\" +\n      state.total +\n      \")\"\n    );\n  }\n\n  const ids =\n    new Set(\n      state.rows.map(\n        row => row.id\n      )\n    );\n\n  if (\n    ids.size !==\n    state.rows.length\n  ) {\n    throw new Error(\n      section +\n      \" : identifiants répétés dans la liste\"\n    );\n  }\n\n  return {\n    section,\n\n    total:\n      state.total,\n\n    count:\n      state.rows.length,\n\n    complete:\n      true,\n\n    rows:\n      state.rows\n  };\n}\n\n\n// ============================================================\n// READ PUBLIC STATS DIRECTLY FROM HIDDEN #stats\n// ============================================================\n\nasync function readPublicStats(\n  page\n) {\n  return await page.evaluate(\n    () => {\n      const clean = value =>\n        String(value ?? \"\")\n          .replace(\n            /\\\\s+/g,\n            \" \"\n          )\n          .trim();\n\n      const normalize = value =>\n        clean(value)\n          .normalize(\n            \"NFD\"\n          )\n          .replace(\n            /[\\\\u0300-\\\\u036f]/g,\n            \"\"\n          )\n          .toLowerCase();\n\n      const text = el => {\n        if (!el) {\n          return \"\";\n        }\n\n        const copy =\n          el.cloneNode(\n            true\n          );\n\n        copy\n          .querySelectorAll(\n            \"i\"\n          )\n          .forEach(\n            n =>\n              n.remove()\n          );\n\n        return clean(\n          copy.textContent\n        );\n      };\n\n      const toInteger =\n        value => {\n          const match =\n            clean(value)\n              .replace(\n                /[\\\\s\\\\u00a0\\\\u202f]/g,\n                \"\"\n              )\n              .match(\n                /-?\\\\d+/\n              );\n\n          return match\n            ? Number(\n                match[0]\n              )\n            : null;\n        };\n\n      const root =\n        document.querySelector(\n          \"main #stats\"\n        );\n\n      if (!root) {\n        return {\n          ready:\n            false,\n\n          reason:\n            \"#stats absent\",\n\n          duration:\n            null,\n\n          parties:\n            null,\n\n          details:\n            null,\n\n          top10:\n            []\n        };\n      }\n\n      const cards = [\n        ...root.querySelectorAll(\n          \".card-content\"\n        )\n      ];\n\n      const findCard =\n        heading =>\n          cards.find(\n            card =>\n              normalize(\n                text(\n                  card.querySelector(\n                    \"h6\"\n                  )\n                )\n              ) ===\n              normalize(\n                heading\n              )\n          ) ?? null;\n\n      const readStats =\n        (\n          card,\n          selector\n        ) => {\n          const values = {};\n\n          if (!card) {\n            return values;\n          }\n\n          for (\n            const container\n            of card.querySelectorAll(\n              \".stat-container\"\n            )\n          ) {\n            const label =\n              normalize(\n                text(\n                  container.querySelector(\n                    selector\n                  )\n                )\n              );\n\n            const value =\n              toInteger(\n                text(\n                  container.querySelector(\n                    \".stat-number\"\n                  )\n                )\n              );\n\n            if (\n              label &&\n              value !== null\n            ) {\n              values[label] =\n                value;\n            }\n          }\n\n          return values;\n        };\n\n\n      // ========================================================\n      // TOTAL PLAY TIME\n      // ========================================================\n\n      const durationValues =\n        readStats(\n          findCard(\n            \"Durée totale de jeu\"\n          ),\n          \".stat-detail\"\n        );\n\n      const duration = {\n        years:\n          durationValues.annees ??\n          null,\n\n        months:\n          durationValues.mois ??\n          null,\n\n        days:\n          durationValues.jours ??\n          null,\n\n        hours:\n          durationValues.heures ??\n          null,\n\n        minutes:\n          durationValues.minutes ??\n          null\n      };\n\n\n      // ========================================================\n      // PARTIES\n      // ========================================================\n\n      const partyValues =\n        readStats(\n          findCard(\n            \"Parties\"\n          ),\n          \".stat-label\"\n        );\n\n      const parties = {\n        total:\n          partyValues.total ??\n          null,\n\n        cooperation:\n          partyValues.cooperation ??\n          null,\n\n        solo:\n          partyValues.solo ??\n          null\n      };\n\n\n      // ========================================================\n      // DETAILS\n      // ========================================================\n\n      const detailValues =\n        readStats(\n          findCard(\n            \"Détails\"\n          ),\n          \".stat-label\"\n        );\n\n      const details = {\n        games:\n          detailValues.jeux ??\n          null,\n\n        places:\n          detailValues.lieux ??\n          null,\n\n        h_index:\n          detailValues[\n            \"h-index\"\n          ] ??\n          null\n      };\n\n\n      // ========================================================\n      // TOP 10\n      // ========================================================\n\n      const rankingTable = [\n        ...root.querySelectorAll(\n          \"table.ranking-table\"\n        )\n      ].find(\n        table =>\n          normalize(\n            text(\n              table.querySelector(\n                \"thead\"\n              )\n            )\n          ).includes(\n            \"top 10 jeu\"\n          )\n      );\n\n      const top10 =\n        rankingTable\n          ? [\n              ...rankingTable\n                .querySelectorAll(\n                  \"tbody tr\"\n                )\n            ]\n              .map(\n                (\n                  row,\n                  index\n                ) => {\n                  const cells = [\n                    ...row.querySelectorAll(\n                      \"td\"\n                    )\n                  ];\n\n                  const link =\n                    cells[0]\n                      ?.querySelector(\n                        'a[href*=\"#!/game/\"]'\n                      );\n\n                  if (!link) {\n                    return null;\n                  }\n\n                  const href =\n                    link.getAttribute(\n                      \"href\"\n                    ) ?? \"\";\n\n                  const titleCopy =\n                    link.cloneNode(\n                      true\n                    );\n\n                  titleCopy\n                    .querySelectorAll(\n                      \".rank\"\n                    )\n                    .forEach(\n                      el =>\n                        el.remove()\n                    );\n\n                  return {\n                    rank:\n                      toInteger(\n                        text(\n                          link.querySelector(\n                            \".rank\"\n                          )\n                        )\n                      ) ??\n                      index + 1,\n\n                    id:\n                      href.match(\n                        /-(\\\\d+)\\\\/stats(?:$|[?#])/\n                      )?.[1] ??\n                      href.match(\n                        /-(\\\\d+)(?:\\\\/|$)/\n                      )?.[1] ??\n                      null,\n\n                    name:\n                      text(\n                        titleCopy\n                      ),\n\n                    duration_minutes:\n                      toInteger(\n                        text(\n                          cells[1]\n                        )\n                      ) ??\n                      0,\n\n                    plays:\n                      toInteger(\n                        text(\n                          cells[2]\n                        )\n                      ) ??\n                      0,\n\n                    url:\n                      href.startsWith(\n                        \"http\"\n                      )\n                        ? href\n                        : \"https://www.myludo.fr/\" +\n                          href\n                  };\n                }\n              )\n              .filter(\n                Boolean\n              )\n          : [];\n\n      const ready =\n        Object\n          .values(\n            duration\n          )\n          .every(\n            Number.isInteger\n          ) &&\n        Object\n          .values(\n            parties\n          )\n          .every(\n            Number.isInteger\n          ) &&\n        Object\n          .values(\n            details\n          )\n          .every(\n            Number.isInteger\n          );\n\n      return {\n        ready,\n        duration,\n        parties,\n        details,\n        top10\n      };\n    }\n  );\n}\n\n\n// ============================================================\n// MAIN\n// ============================================================\n\nfunction optionalCount(value) {\n  if (\n    (typeof value !== \"number\" && typeof value !== \"string\") ||\n    (typeof value === \"string\" && value.trim() === \"\")\n  ) {\n    return null;\n  }\n\n  const number = Number(value);\n  return Number.isSafeInteger(number) && number >= 0 ? number : null;\n}\n\nfunction normalizePublicStats(value) {\n  const isRecord = item =>\n    item !== null && typeof item === \"object\" && !Array.isArray(item);\n  const raw = isRecord(value) ? value : {};\n  const readCounters = (group, keys) => Object.fromEntries(\n    keys.map(key => [key, optionalCount(isRecord(group) ? group[key] : null)])\n  );\n\n  const duration = readCounters(raw.duration, [\n    \"years\", \"months\", \"days\", \"hours\", \"minutes\"\n  ]);\n  const parties = readCounters(raw.parties, [\"total\", \"cooperation\", \"solo\"]);\n  const details = readCounters(raw.details, [\"games\", \"places\", \"h_index\"]);\n  const ready = raw.ready === true &&\n    [duration, parties, details].every(group =>\n      Object.values(group).every(number => number !== null)\n    ) && Array.isArray(raw.top10);\n\n  return {\n    ...raw,\n    ready,\n    reason: ready ? null : String(raw.reason || \"Statistiques absentes ou incomplètes\"),\n    duration,\n    parties,\n    details,\n    top10: Array.isArray(raw.top10) ? raw.top10.filter(isRecord) : []\n  };\n}\n\nfunction collectStatsWarnings(existing, publicStats) {\n  const warnings = Array.isArray(existing) ? [...existing] : [];\n  if (!publicStats.ready) {\n    const warning = \"Statistiques MyLudo indisponibles ou incomplètes : \" + publicStats.reason;\n    if (!warnings.includes(warning)) warnings.push(warning);\n  }\n  return warnings;\n}\n\nexport default async function scrapeLists({\n  page,\n  context = {}\n}) {\n  const config =\n    await prepareBrowser(\n      page,\n      context\n    );\n\n  // Keep the original working Collection logic.\n  const collection =\n    await loadEntireSection(\n      page,\n      config,\n      \"collection\"\n    );\n\n  // Public statistics are optional; missing data must not stop the lists.\n  let rawPublicStats;\n  try {\n    rawPublicStats = await readPublicStats(page);\n  } catch (error) {\n    rawPublicStats = {\n      ready: false,\n      reason: \"Lecture des statistiques impossible : \" + String(error?.message ?? error)\n    };\n  }\n\n  const publicStats = normalizePublicStats(rawPublicStats);\n  const warnings = collectStatsWarnings([], publicStats);\n\n  // Keep the original working Wishlist logic.\n  const wishlist =\n    await loadEntireSection(\n      page,\n      config,\n      \"wishlist\"\n    );\n\n  const sections = [\n    collection,\n    wishlist\n  ];\n\n  return {\n    data: {\n      ok: true,\n\n      profile:\n        config.profile,\n\n      extracted_at:\n        new Date()\n          .toISOString(),\n\n      sections,\n\n      rows:\n        sections.flatMap(\n          section =>\n            section.rows\n        ),\n\n      public_stats:\n        publicStats,\n\n      warnings\n    },\n\n    type:\n      \"application/json\"\n  };\n}\n\n`,\n  context: $('Paramètres MyLudo').first().json\n} }}",
+        "options": {}
+      },
+      "id": "002ae9a3-ca47-5abf-8366-569ffac40e42",
+      "maxTries": 2,
+      "name": "ludothèque1",
+      "notesInFlow": true,
+      "position": [
+        -2000,
+        1248
+      ],
+      "retryOnFail": true,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "waitBetweenTries": 3000,
+      "notes": "Charge Tout dans chaque onglet, sans filtres, puis compare le nombre de cartes au compteur MyLudo."
+    },
+    {
+      "parameters": {
+        "jsCode": "function unwrapResponse(value) {\n  let current = value;\n\n  for (let i = 0; i < 4; i++) {\n    if (typeof current === \"string\") {\n      try {\n        current = JSON.parse(current);\n      } catch {\n        throw new Error(\"Réponse Browserless non JSON\");\n      }\n    } else if (\n      current &&\n      typeof current === \"object\" &&\n      \"data\" in current &&\n      !(\"ok\" in current)\n    ) {\n      current = current.data;\n    } else {\n      break;\n    }\n  }\n\n  if (\n    !current ||\n    typeof current !== \"object\" ||\n    Array.isArray(current)\n  ) {\n    throw new Error(\n      \"Réponse Browserless vide ou invalide\"\n    );\n  }\n\n  if (\n    current.error ||\n    current.erreur ||\n    current.ok === false\n  ) {\n    throw new Error(\n      String(\n        current.error?.message ||\n        current.error ||\n        current.erreur ||\n        \"Échec MyLudo\"\n      )\n    );\n  }\n\n  return current;\n}\n\n\n// ============================================================\n// PRICE\n// ============================================================\n\nfunction parseEuro(raw) {\n  if (\n    raw === null ||\n    raw === undefined ||\n    String(raw).trim() === \"\"\n  ) {\n    return null;\n  }\n\n  const text =\n    String(raw).trim();\n\n  // Explicitly free items have a known price of zero.\n  if (/^gratuite?s?$/i.test(text)) {\n    return 0;\n  }\n\n  // Missing prices remain unknown.\n  if (\n    /^(?:[-–—?]|n\\/a|nc|n\\.c\\.|non renseign[eé]|indisponible)$/i.test(\n      text\n    )\n  ) {\n    return null;\n  }\n\n  const compact =\n    text\n      .replace(\n        /[\\s\\u00a0\\u202f]/g,\n        \"\"\n      )\n      .replace(\n        /(?:€|EUR)$/i,\n        \"\"\n      );\n\n  const normalized =\n    compact.includes(\",\")\n      ? compact\n          .replace(/\\./g, \"\")\n          .replace(\",\", \".\")\n      : compact;\n\n  if (\n    !/^\\d+(?:\\.\\d{1,2})?$/.test(\n      normalized\n    )\n  ) {\n    throw new Error(\n      \"Prix illisible : \" +\n      text\n    );\n  }\n\n  const amount =\n    Number(normalized);\n\n  if (\n    !Number.isFinite(amount) ||\n    amount < 0\n  ) {\n    throw new Error(\n      \"Prix invalide : \" +\n      text\n    );\n  }\n\n  return amount;\n}\n\n\n// ============================================================\n// EDITION / CATEGORY / YEAR\n// ============================================================\n\nfunction parseEdition(\n  raw,\n  fallbackDate = \"\"\n) {\n  const label =\n    String(raw ?? \"\")\n      .replace(/\\s+/g, \" \")\n      .trim();\n\n  const year =\n    label.match(\n      /\\b[12]\\d{3}\\b/\n    )?.[0] ||\n    String(\n      fallbackDate\n    ).match(\n      /\\b[12]\\d{3}\\b/\n    )?.[0];\n\n  const type =\n    label\n      .replace(\n        /\\b[12]\\d{3}\\b/g,\n        \"\"\n      )\n      .replace(\n        /^[\\s:–—-]+|[\\s:–—-]+$/g,\n        \"\"\n      )\n      .trim()\n      .toLowerCase();\n\n  const category =\n    !type\n      ? \"jeu de base\"\n\n      : /\\bstand[\\s-]?alone\\b/.test(\n          type\n        )\n        ? \"standalone\"\n\n        : /\\bextension\\b/.test(\n            type\n          )\n          ? \"extension\"\n\n          : /\\baccessoire\\b/.test(\n              type\n            )\n            ? \"accessoire\"\n\n            : /\\bgoodie\\b/.test(\n                type\n              )\n              ? \"goodie\"\n\n              : /\\bd[eé]mo\\b/.test(\n                  type\n                )\n                ? \"démo\"\n\n                : /\\b(?:jeu de base|basegame)\\b/.test(\n                    type\n                  )\n                  ? \"jeu de base\"\n\n                  : \"autre\";\n\n  return {\n    annee_sortie:\n      year\n        ? Number(year)\n        : null,\n\n    categorie:\n      category,\n\n    label,\n\n    type,\n  };\n}\n\n\n// ============================================================\n// MANIFEST FROM ludothèque1\n// ============================================================\n\nconst manifest =\n  unwrapResponse(\n    $('ludothèque1')\n      .first()\n      .json\n  );\n\n\n// ============================================================\n// PUBLIC MYLUDO STATS\n// ============================================================\n\nfunction optionalCount(value) {\n  if (\n    (typeof value !== \"number\" && typeof value !== \"string\") ||\n    (typeof value === \"string\" && value.trim() === \"\")\n  ) {\n    return null;\n  }\n\n  const number = Number(value);\n  return Number.isSafeInteger(number) && number >= 0 ? number : null;\n}\n\nfunction normalizePublicStats(value) {\n  const isRecord = item =>\n    item !== null && typeof item === \"object\" && !Array.isArray(item);\n  const raw = isRecord(value) ? value : {};\n  const readCounters = (group, keys) => Object.fromEntries(\n    keys.map(key => [key, optionalCount(isRecord(group) ? group[key] : null)])\n  );\n\n  const duration = readCounters(raw.duration, [\n    \"years\", \"months\", \"days\", \"hours\", \"minutes\"\n  ]);\n  const parties = readCounters(raw.parties, [\"total\", \"cooperation\", \"solo\"]);\n  const details = readCounters(raw.details, [\"games\", \"places\", \"h_index\"]);\n  const ready = raw.ready === true &&\n    [duration, parties, details].every(group =>\n      Object.values(group).every(number => number !== null)\n    ) && Array.isArray(raw.top10);\n\n  return {\n    ...raw,\n    ready,\n    reason: ready ? null : String(raw.reason || \"Statistiques absentes ou incomplètes\"),\n    duration,\n    parties,\n    details,\n    top10: Array.isArray(raw.top10) ? raw.top10.filter(isRecord) : []\n  };\n}\n\nfunction collectStatsWarnings(existing, publicStats) {\n  const warnings = Array.isArray(existing) ? [...existing] : [];\n  if (!publicStats.ready) {\n    const warning = \"Statistiques MyLudo indisponibles ou incomplètes : \" + publicStats.reason;\n    if (!warnings.includes(warning)) warnings.push(warning);\n  }\n  return warnings;\n}\n\nconst publicStats = normalizePublicStats(manifest.public_stats);\nconst warnings = collectStatsWarnings(manifest.warnings, publicStats);\n\n\n// ============================================================\n// DETAILS FROM GAME PAGES\n// ============================================================\n\nconst detailsById =\n  new Map();\n\nfor (\n  const item\n  of $input.all()\n) {\n  const batch =\n    unwrapResponse(\n      item.json\n    );\n\n  if (\n    !Array.isArray(\n      batch.details\n    )\n  ) {\n    throw new Error(\n      \"Réponse de fiche invalide\"\n    );\n  }\n\n  for (\n    const detail\n    of batch.details\n  ) {\n    if (\n      !detail.ready ||\n      !detail.id ||\n      detailsById.has(\n        detail.id\n      )\n    ) {\n      throw new Error(\n        \"Fiche manquante ou répétée : \" +\n        detail.id\n      );\n    }\n\n    detailsById.set(\n      detail.id,\n      detail\n    );\n  }\n}\n\n\n// ============================================================\n// VERIFY EVERY GAME HAS A DETAIL PAGE\n// ============================================================\n\nconst expectedIds =\n  new Set(\n    manifest.rows.map(\n      row => row.id\n    )\n  );\n\nif (\n  expectedIds.size !==\n    detailsById.size ||\n\n  [...expectedIds].some(\n    id =>\n      !detailsById.has(id)\n  )\n) {\n  throw new Error(\n    \"Toutes les fiches n’ont pas été extraites : aucune modification de la table\"\n  );\n}\n\n\n// ============================================================\n// BUILD FINAL DATA TABLE ROWS\n// ============================================================\n\nconst rows =\n  manifest.rows.map(\n    card => {\n      const detail =\n        detailsById.get(\n          card.id\n        );\n\n      const cardEdition =\n        parseEdition(\n          card.edition_label\n        );\n\n      const detailEdition =\n        parseEdition(\n          detail.edition_label,\n          detail.release_label\n        );\n\n      // --------------------------------------------------------\n      // YEAR CONSISTENCY\n      // --------------------------------------------------------\n\n      if (\n        cardEdition.annee_sortie &&\n        detailEdition.annee_sortie &&\n        cardEdition.annee_sortie !==\n          detailEdition.annee_sortie\n      ) {\n        throw new Error(\n          \"Année contradictoire pour \" +\n          card.Nom\n        );\n      }\n\n      // --------------------------------------------------------\n      // CATEGORY CONSISTENCY\n      // --------------------------------------------------------\n\n      if (\n        cardEdition.label &&\n        detailEdition.label &&\n        cardEdition.categorie !==\n          detailEdition.categorie\n      ) {\n        throw new Error(\n          \"Catégorie contradictoire pour \" +\n          card.Nom\n        );\n      }\n\n      const year =\n        cardEdition\n          .annee_sortie ??\n        detailEdition\n          .annee_sortie;\n\n      const category =\n        cardEdition.label\n          ? cardEdition.categorie\n\n          : detailEdition.label\n            ? detailEdition.categorie\n\n            : \"autre\";\n\n      // --------------------------------------------------------\n      // GENRES\n      // --------------------------------------------------------\n\n      if (\n        !Array.isArray(\n          detail.genre\n        )\n      ) {\n        throw new Error(\n          \"Genres non lus pour \" +\n          card.Nom\n        );\n      }\n\n      // --------------------------------------------------------\n      // PRICE\n      // --------------------------------------------------------\n\n      const price =\n        parseEuro(\n          card.statuts ===\n            \"wishlist\"\n            ? card.price_label\n            : detail.price_label\n        );\n\n      return {\n        Nom:\n          card.Nom,\n\n        statuts:\n          card.statuts,\n\n        genre:\n          [\n            ...new Set(\n              detail.genre\n                .map(\n                  genre =>\n                    String(\n                      genre\n                    ).trim()\n                )\n                .filter(\n                  Boolean\n                )\n            )\n          ].join(\" | \") ||\n          null,\n\n        categorie:\n          category,\n\n        prix:\n          price,\n\n        annee_sortie:\n          year,\n      };\n    }\n  );\n\n\n// ============================================================\n// VERIFY COLLECTION / WISHLIST COUNTS\n// ============================================================\n\nfor (\n  const section\n  of manifest.sections\n) {\n  const count =\n    rows.filter(\n      row =>\n        row.statuts ===\n        section.section\n    ).length;\n\n  if (\n    !section.complete ||\n    count !==\n      section.total\n  ) {\n    throw new Error(\n      \"Comptage final incomplet : \" +\n      section.section\n    );\n  }\n}\n\n\n// ============================================================\n// INTERNAL EXTRACTION STATS\n// ============================================================\n\nconst stats = {\n  collection:\n    rows.filter(\n      row =>\n        row.statuts ===\n        \"collection\"\n    ).length,\n\n  wishlist:\n    rows.filter(\n      row =>\n        row.statuts ===\n        \"wishlist\"\n    ).length,\n\n  fiches:\n    detailsById.size,\n\n  prix_absents:\n    rows.filter(\n      row =>\n        row.prix ===\n        null\n    ).length,\n\n  annees_absentes:\n    rows.filter(\n      row =>\n        row.annee_sortie ===\n        null\n    ).length,\n\n  genres_absents:\n    rows.filter(\n      row =>\n        row.genre ===\n        null\n    ).length,\n};\n\n\n// ============================================================\n// FINAL OUTPUT\n// ============================================================\n\nreturn [\n  {\n    json: {\n      complete:\n        true,\n\n      extracted_at:\n        manifest.extracted_at,\n\n      rows,\n\n      stats,\n\n      public_stats:\n        publicStats,\n\n      warnings,\n    },\n  },\n];"
+      },
+      "id": "455d182c-aed6-5272-a980-6b133e347610",
+      "name": "Stat4",
+      "notesInFlow": true,
+      "position": [
+        -1328,
+        1152
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "notes": "Validation complète avant écriture. Le prix wishlist vient de sa carte ; les données absentes restent null."
+    },
+    {
+      "parameters": {
+        "resource": "table",
+        "operation": "clear",
+        "dataTableId": {
+          "__rl": true,
+          "value": "YOUR_JEUX_DE_SOCI_T__TABLE_ID",
+          "mode": "id"
+        }
+      },
+      "alwaysOutputData": true,
+      "executeOnce": true,
+      "id": "e96b4447-ddd9-5534-8f2a-84b87da56066",
+      "name": "Clear a data table3",
+      "notesInFlow": true,
+      "position": [
+        -1104,
+        1152
+      ],
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "notes": "Rafraîchissement intégral de Jeux de société, uniquement après validation de toutes les listes et fiches. Ne pas lancer ce nœud isolément."
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SPREADSHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "N8N",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Genre": "Jeux de société",
+            "En possession (Total)": "={{ $json.Collection }}",
+            "Liste de souhait": "={{ $json.wishlist }}",
+            "En possession et Lu": "={{ $json.Statistiques }}"
+          },
+          "matchingColumns": [
+            "Genre"
+          ],
+          "schema": [
+            {
+              "id": "Genre",
+              "displayName": "Genre",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Liste de souhait",
+              "displayName": "Liste de souhait",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "En possession (Total)",
+              "displayName": "En possession (Total)",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "En possession et Lu",
+              "displayName": "En possession et Lu",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Non possédé et Lu",
+              "displayName": "Non possédé et Lu",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Dédicace",
+              "displayName": "Dédicace",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Autre Stat",
+              "displayName": "Autre Stat",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Pages",
+              "displayName": "Pages",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Poids",
+              "displayName": "Poids",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Prix",
+              "displayName": "Prix",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Stat",
+              "displayName": "Stat",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Max",
+              "displayName": "Max",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Min",
+              "displayName": "Min",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Max p",
+              "displayName": "Max p",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Min p",
+              "displayName": "Min p",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Moyenne Page",
+              "displayName": "Moyenne Page",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -208,
+        1152
+      ],
+      "id": "d7883d1e-41c8-5023-bc2b-585e83f42a7a",
+      "name": "Append or update row in sheet1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Mode: Run Once for All Items.\n//\n// Use the complete validated dataset after the table insertion succeeds.\nconst source = $('Stat4').first().json;\n\nif (source.complete !== true || !Array.isArray(source.rows)) {\n  throw new Error(\n    'Les données complètes de Stat4 sont indisponibles.'\n  );\n}\n\n// ============================================================\n// PUBLIC MYLUDO STATISTICS\n// ============================================================\n\nfunction optionalCount(value) {\n  if (\n    (typeof value !== \"number\" && typeof value !== \"string\") ||\n    (typeof value === \"string\" && value.trim() === \"\")\n  ) {\n    return null;\n  }\n\n  const number = Number(value);\n  return Number.isSafeInteger(number) && number >= 0 ? number : null;\n}\n\nfunction normalizePublicStats(value) {\n  const isRecord = item =>\n    item !== null && typeof item === \"object\" && !Array.isArray(item);\n  const raw = isRecord(value) ? value : {};\n  const readCounters = (group, keys) => Object.fromEntries(\n    keys.map(key => [key, optionalCount(isRecord(group) ? group[key] : null)])\n  );\n\n  const duration = readCounters(raw.duration, [\n    \"years\", \"months\", \"days\", \"hours\", \"minutes\"\n  ]);\n  const parties = readCounters(raw.parties, [\"total\", \"cooperation\", \"solo\"]);\n  const details = readCounters(raw.details, [\"games\", \"places\", \"h_index\"]);\n  const ready = raw.ready === true &&\n    [duration, parties, details].every(group =>\n      Object.values(group).every(number => number !== null)\n    ) && Array.isArray(raw.top10);\n\n  return {\n    ...raw,\n    ready,\n    reason: ready ? null : String(raw.reason || \"Statistiques absentes ou incomplètes\"),\n    duration,\n    parties,\n    details,\n    top10: Array.isArray(raw.top10) ? raw.top10.filter(isRecord) : []\n  };\n}\n\nfunction collectStatsWarnings(existing, publicStats) {\n  const warnings = Array.isArray(existing) ? [...existing] : [];\n  if (!publicStats.ready) {\n    const warning = \"Statistiques MyLudo indisponibles ou incomplètes : \" + publicStats.reason;\n    if (!warnings.includes(warning)) warnings.push(warning);\n  }\n  return warnings;\n}\n\nconst publicStats = normalizePublicStats(source.public_stats);\nconst warnings = collectStatsWarnings(source.warnings, publicStats);\n\n// ============================================================\n// HELPERS\n// ============================================================\n\nconst clean = value =>\n  String(value ?? '')\n    .replace(/\\s+/g, ' ')\n    .trim();\n\nconst normalize = value =>\n  clean(value)\n    .normalize('NFD')\n    .replace(/[\\u0300-\\u036f]/g, '')\n    .toLowerCase();\n\n// ============================================================\n// CATEGORY NORMALIZATION\n// ============================================================\n\nconst categoryMap = new Map([\n  ['jeu de base', 'Jeux de base'],\n  ['jeux de base', 'Jeux de base'],\n  ['basegame', 'Jeux de base'],\n\n  ['extension', 'extension'],\n  ['standalone', 'standalone'],\n  ['accessoire', 'accessoire'],\n  ['goodie', 'goodie'],\n\n  ['demo', 'démo'],\n  ['démo', 'démo'],\n\n  ['autre', 'autre'],\n]);\n\n// ============================================================\n// GROUP CREATION\n// ============================================================\n\nfunction createGroup() {\n  return {\n    categories: {\n      'Jeux de base': 0,\n      extension: 0,\n      standalone: 0,\n      accessoire: 0,\n      goodie: 0,\n      'démo': 0,\n      autre: 0,\n    },\n\n    genres: new Map(),\n    genreLabels: new Map(),\n\n    decades: new Map(),\n\n    total: 0,\n\n    priceCents: 0,\n    knownPrices: 0,\n    missingPrices: 0,\n  };\n}\n\nconst groups = {\n  collection: createGroup(),\n  wishlist: createGroup(),\n};\n\n// ============================================================\n// ANALYZE DATA TABLE ROWS\n// ============================================================\n\nfor (const row of source.rows) {\n  const status = normalize(row.statuts);\n\n  if (!Object.hasOwn(groups, status)) {\n    throw new Error(\n      `Statut inconnu pour \"${row.Nom}\" : ${row.statuts}`\n    );\n  }\n\n  const group = groups[status];\n\n  group.total++;\n\n  // ==========================================================\n  // CATEGORY\n  // ==========================================================\n\n  const category =\n    categoryMap.get(\n      normalize(row.categorie)\n    ) ?? 'autre';\n\n  group.categories[category]++;\n\n  // ==========================================================\n  // GENRES\n  // ==========================================================\n\n  const values = Array.isArray(row.genre)\n    ? row.genre\n    : String(row.genre ?? '').split('|');\n\n  const seen = new Set();\n\n  for (const value of values) {\n    const label = clean(value);\n\n    if (!label) {\n      continue;\n    }\n\n    const key = normalize(label);\n\n    // Count each genre only once per game.\n    if (seen.has(key)) {\n      continue;\n    }\n\n    seen.add(key);\n\n    if (!group.genreLabels.has(key)) {\n      group.genreLabels.set(\n        key,\n        label\n      );\n    }\n\n    group.genres.set(\n      key,\n      (group.genres.get(key) ?? 0) + 1\n    );\n  }\n\n  if (!seen.size) {\n    group.genreLabels.set(\n      'sans genre',\n      'Sans genre'\n    );\n\n    group.genres.set(\n      'sans genre',\n      (group.genres.get('sans genre') ?? 0) + 1\n    );\n  }\n\n  // ==========================================================\n  // PRICE\n  // ==========================================================\n\n  const missingPrice =\n    row.prix === null ||\n    row.prix === undefined ||\n    clean(row.prix) === '';\n\n  if (missingPrice) {\n    group.missingPrices++;\n  } else {\n    const price = Number(row.prix);\n    const cents = Math.round(price * 100);\n\n    if (\n      !Number.isFinite(price) ||\n      price < 0 ||\n      !Number.isSafeInteger(cents)\n    ) {\n      throw new Error(\n        `Prix invalide pour \"${row.Nom}\" : ${row.prix}`\n      );\n    }\n\n    group.priceCents += cents;\n\n    if (!Number.isSafeInteger(group.priceCents)) {\n      throw new Error(\n        'Total des prix trop grand'\n      );\n    }\n\n    group.knownPrices++;\n  }\n\n  // ==========================================================\n  // RELEASE DECADE\n  // ==========================================================\n\n  let decade = 'Sans année';\n\n  const missingYear =\n    row.annee_sortie === null ||\n    row.annee_sortie === undefined ||\n    clean(row.annee_sortie) === '';\n\n  if (!missingYear) {\n    const year = Number(\n      row.annee_sortie\n    );\n\n    if (\n      !Number.isInteger(year) ||\n      year < 1000 ||\n      year > 2999\n    ) {\n      throw new Error(\n        `Année invalide pour \"${row.Nom}\" : ${row.annee_sortie}`\n      );\n    }\n\n    decade = String(\n      Math.floor(year / 10) * 10\n    );\n  }\n\n  group.decades.set(\n    decade,\n    (group.decades.get(decade) ?? 0) + 1\n  );\n}\n\n// ============================================================\n// PRICE FORMAT\n// ============================================================\n\nconst currency = new Intl.NumberFormat(\n  'fr-FR',\n  {\n    style: 'currency',\n    currency: 'EUR',\n    minimumFractionDigits: 2,\n    maximumFractionDigits: 2,\n  }\n);\n\n// ============================================================\n// FORMAT COLLECTION / WISHLIST\n// ============================================================\n\nfunction formatGroup(group) {\n  const genres = [...group.genres]\n    .map(([key, count]) => [\n      group.genreLabels.get(key),\n      count,\n    ])\n    .sort(\n      (a, b) =>\n        b[1] - a[1] ||\n        a[0].localeCompare(\n          b[0],\n          'fr'\n        )\n    );\n\n  const decades = [\n    ...group.decades.entries(),\n  ].sort((a, b) => {\n    if (a[0] === 'Sans année') {\n      return 1;\n    }\n\n    if (b[0] === 'Sans année') {\n      return -1;\n    }\n\n    return Number(b[0]) - Number(a[0]);\n  });\n\n  const formattedPrice =\n    group.knownPrices > 0 ||\n    group.total === 0\n      ? currency\n          .format(\n            group.priceCents / 100\n          )\n          .replace(\n            /[\\u00a0\\u202f]/g,\n            ' '\n          )\n      : null;\n\n  return {\n    Total: group.total,\n\n    ...group.categories,\n\n    genre:\n      Object.fromEntries(genres),\n\n    prix:\n      formattedPrice,\n\n    sans_prix:\n      group.missingPrices,\n\n    prix_connus:\n      group.knownPrices,\n\n    'décennie':\n      Object.fromEntries(decades),\n  };\n}\n\n// ============================================================\n// TOTAL PLAY TIME\n// ============================================================\n\nfunction formatDuration(duration) {\n  // A partial duration cannot be presented as a known total.\n  const keys = [\"years\", \"months\", \"days\", \"hours\", \"minutes\"];\n  if (!duration || keys.some(key => optionalCount(duration[key]) === null)) {\n    return null;\n  }\n\n  const parts = [];\n\n  const years =\n    Number(duration.years) || 0;\n\n  const months =\n    Number(duration.months) || 0;\n\n  const days =\n    Number(duration.days) || 0;\n\n  const hours =\n    Number(duration.hours) || 0;\n\n  const minutes =\n    Number(duration.minutes) || 0;\n\n  if (years > 0) {\n    parts.push(\n      `${years} ${\n        years === 1\n          ? 'an'\n          : 'ans'\n      }`\n    );\n  }\n\n  if (months > 0) {\n    parts.push(\n      `${months} mois`\n    );\n  }\n\n  if (days > 0) {\n    parts.push(\n      `${days} j`\n    );\n  }\n\n  if (hours > 0) {\n    parts.push(\n      `${hours} h`\n    );\n  }\n\n  if (\n    minutes > 0 ||\n    parts.length === 0\n  ) {\n    parts.push(\n      `${minutes} min`\n    );\n  }\n\n  return parts.join(' ');\n}\n\n// ============================================================\n// MYLUDO PUBLIC STATISTICS\n// ============================================================\n\nconst myLudoStats = {\n  // ----------------------------------------------------------\n  // TOTAL PLAY TIME\n  // ----------------------------------------------------------\n\n  duree_totale:\n    formatDuration(\n      publicStats.duration\n    ),\n\n  duree_totale_detail: {\n    annees:\n      publicStats.duration.years,\n\n    mois:\n      publicStats.duration.months,\n\n    jours:\n      publicStats.duration.days,\n\n    heures:\n      publicStats.duration.hours,\n\n    minutes:\n      publicStats.duration.minutes,\n  },\n\n  // ----------------------------------------------------------\n  // PLAYS\n  // ----------------------------------------------------------\n\n  parties: {\n    total:\n      publicStats.parties.total,\n\n    cooperation:\n      publicStats.parties.cooperation,\n\n    solo:\n      publicStats.parties.solo,\n  },\n\n  // ----------------------------------------------------------\n  // DETAILS\n  // ----------------------------------------------------------\n\n  details: {\n    jeux:\n      publicStats.details.games,\n\n    lieux:\n      publicStats.details.places,\n\n    h_index:\n      publicStats.details.h_index,\n  },\n\n  // ----------------------------------------------------------\n  // TOP 10 GAMES\n  // ----------------------------------------------------------\n\n  top_10:\n    publicStats.top10\n      .map((entry, index) => ({\n        rang:\n          Number(entry.rank) ||\n          index + 1,\n\n        id:\n          entry.id ?? null,\n\n        jeu:\n          clean(entry.name) ||\n          'Jeu inconnu',\n\n        duree_minutes:\n          optionalCount(entry.duration_minutes),\n\n        parties:\n          optionalCount(entry.plays),\n\n        url:\n          entry.url ?? null,\n      }))\n      .sort(\n        (a, b) =>\n          a.rang - b.rang\n      ),\n};\n\n// ============================================================\n// FINAL SINGLE OUTPUT\n// ============================================================\n\nreturn [\n  {\n    json: {\n      Collection:\n        formatGroup(\n          groups.collection\n        ),\n\n      wishlist:\n        formatGroup(\n          groups.wishlist\n        ),\n\n      Statistiques:\n        myLudoStats,\n\n      warnings,\n    },\n  },\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -432,
+        1152
+      ],
+      "id": "aa28f2d9-0f8c-55b3-877e-9c291add25c5",
+      "name": "Code in JavaScript18"
+    }
+  ],
+  "connections": {
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "If5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configuration Globale": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If5": {
+      "main": [
+        [
+          {
+            "node": "Paramètres MyLudo",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Restauration Tunnel1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restauration Tunnel1": {
+      "main": [
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items4": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Date & Time": {
+      "main": [
+        [
+          {
+            "node": "Configuration Globale",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Date & Time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Boucle des fiches": {
+      "main": [
+        [
+          {
+            "node": "Stat4",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fiches des jeux",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Contrôler l’accès": {
+      "main": [
+        [
+          {
+            "node": "If10",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fiches des jeux": {
+      "main": [
+        [
+          {
+            "node": "Boucle des fiches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lignes validées": {
+      "main": [
+        [
+          {
+            "node": "Enregistrer les jeux",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Paramètres MyLudo": {
+      "main": [
+        [
+          {
+            "node": "Vérification cookie1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Préparer les lots": {
+      "main": [
+        [
+          {
+            "node": "Boucle des fiches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enregistrer les jeux": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript18",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vérification cookie1": {
+      "main": [
+        [
+          {
+            "node": "Contrôler l’accès",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If10": {
+      "main": [
+        [
+          {
+            "node": "ludothèque1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Discord2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ludothèque1": {
+      "main": [
+        [
+          {
+            "node": "Préparer les lots",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stat4": {
+      "main": [
+        [
+          {
+            "node": "Clear a data table3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clear a data table3": {
+      "main": [
+        [
+          {
+            "node": "Lignes validées",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript18": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
